@@ -8,10 +8,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-extension UTType {
-    static let xcstrings = UTType(filenameExtension: "xcstrings", conformingTo: .json)!
-}
-
 struct StringsDocument: FileDocument {
     static let readableContentTypes: [UTType] = [
         .xcstrings

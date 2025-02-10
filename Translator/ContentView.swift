@@ -38,6 +38,10 @@ struct ContentView: View {
         selectedTargetLanguage != nil && selectedDestinationLanguage != nil && processedDocument != nil
     }
     
+    private var isReadyToExport: Bool {
+        selectedTargetLanguage != nil && selectedDestinationLanguage != nil && processedDocument != nil
+    }
+    
     // MARK: - Body
     
     var body: some View {
@@ -69,11 +73,19 @@ struct ContentView: View {
                 }
                 .labeledContentStyle(VerticalLabeledContentStyle())
                 
-                Button("Button.Translate", systemImage: "icloud.and.arrow.down") {
-                    prepareTranslationSession()
+                HStack {
+                    Button("Button.Translate", systemImage: "character.bubble.fill") {
+                        prepareTranslationSession()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .disabled(!isReadyToTranslate)
+                    
+                    Button("Button.Download", systemImage: "icloud.and.arrow.down") {
+                        isFileExporterPresenter = true
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .disabled(!isReadyToExport)
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(!isReadyToTranslate)
             }
             .padding()
             
@@ -140,9 +152,9 @@ private extension ContentView {
             do {
                 statusText = "Status.Translation"
                 try await session.prepareTranslation()
-                processedDocument = try await localizationManager.translateDocument(document, session: session)
-                isFileExporterPresenter = true
-                statusText = "Status.Finished"
+                let result = try await localizationManager.translateDocument(document, session: session)
+                processedDocument = result.document
+                statusText = "Status.Finished_\(result.sourceKeysCount)_\(result.translatedKeysCount)"
             } catch {
                 statusText = "Error: \(error.localizedDescription)"
             }

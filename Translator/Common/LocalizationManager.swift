@@ -43,7 +43,11 @@ actor LocalizationManager {
         return try StringsDocument(data: data)
     }
     
-    func translateDocument(_ document: StringsDocument, session: TranslationSession) async throws -> StringsDocument {
+    func loadStats() {
+        
+    }
+    
+    func translateDocument(_ document: StringsDocument, session: TranslationSession) async throws -> LocalizationResult {
        guard
             let sourceLanguageCode = session.sourceLanguage?.id,
             let targetLanguageCode = session.targetLanguage?.id
@@ -52,19 +56,31 @@ actor LocalizationManager {
         }
         
         var document = document
+        var translatedStringsCount = 0
 
         for (key, string) in document.data.strings {
             let data = string.localizations?[sourceLanguageCode]
-            guard let value = data?.stringUnit.value else {
+            let value = data?.stringUnit.value
+            
+            let targetData = string.localizations?[targetLanguageCode]
+            let targetState = targetData?.stringUnit.state
+            
+            guard let value, targetState != "translated" else {
                 continue
             }
+            
             let translatedValue = try await session.translate(value).targetText
             
             document.data.strings[key]?.localizations?[targetLanguageCode] = LocalizedLanguage(
                 stringUnit: LocalizedStringUnit(state: "needs_review", value: translatedValue)
             )
+            translatedStringsCount += 1
         }
         
-        return document
+        return LocalizationResult(
+            document: document,
+            sourceKeysCount: document.data.strings.count,
+            translatedKeysCount: translatedStringsCount
+        )
     }
 }
